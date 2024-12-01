@@ -23,31 +23,21 @@ l1_ratio = 0.9
 max_iter = int(1e4)
 
 def predict_test(train_data, train_labels, test_data):
-    mean_train_feature = np.mean(train_data, axis=1)
-    std_train_feature = np.std(train_data, axis=1)
-    
-    mean_test_feature = np.mean(test_data, axis=1)
-    std_test_feature = np.std(test_data, axis=1)
-    
-    X_train = np.hstack((mean_train_feature, std_train_feature))
-    X_test = np.hstack((mean_test_feature, std_test_feature))
-    
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
     
     model = keras.Sequential([
-        keras.layers.Dense(32, activation='relu', input_dim=X_train.shape[1]),  # Specify input dimension
-        keras.layers.Dense(16, activation='relu'),
-        keras.layers.Dense(1, activation='sigmoid') 
-    ])
+    keras.Input(shape=(60,6)), 
+    keras.layers.LSTM(64, input_shape=(60, 6), return_sequences=True),
+    keras.layers.LSTM(32),
+    keras.layers.Dense(16, activation='relu'),
+    keras.layers.Dense(4, activation='softmax')  # For multi-class classification
+])
+
     
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-    model.fit(X_train, train_labels, epochs=10, batch_size=4, validation_split=0.2)
+    model.fit(train_data, train_labels, epochs=10, batch_size=4, validation_split=0.2)
 
-    test_outputs = model.predict(X_test)
-    test_outputs = (test_outputs > 0.5).astype(int)  
+    test_outputs = model.predict(test_data)
 
     micro_f1 = f1_score(test_labels, test_outputs, average='micro')
     macro_f1 = f1_score(test_labels, test_outputs, average='macro')
@@ -76,6 +66,8 @@ if __name__ == "__main__":
     train_labels = labels[:train_end_index+1]
     test_data = data[train_end_index+1:, :, :]
     test_labels = labels[train_end_index+1:]
+    train_labels -= 1
+    test_labels -= 1
     test_outputs = predict_test(train_data, train_labels, test_data)
     
     # Compute micro and macro-averaged F1 scores
