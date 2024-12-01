@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import f1_score
+import keras
 
 sensor_names = ['Acc_x', 'Acc_y', 'Acc_z', 'Gyr_x', 'Gyr_y', 'Gyr_z']
 # Last row of training data for train/test split
@@ -22,24 +23,36 @@ l1_ratio = 0.9
 max_iter = int(1e4)
 
 def predict_test(train_data, train_labels, test_data):
-    # Feature extraction: compute mean and standard deviation of each row for
-    # each sensor and concatenate across sensors to form the feature vector
     mean_train_feature = np.mean(train_data, axis=1)
     std_train_feature = np.std(train_data, axis=1)
-    train_features = np.hstack((mean_train_feature, std_train_feature))
+    
     mean_test_feature = np.mean(test_data, axis=1)
     std_test_feature = np.std(test_data, axis=1)
-    test_features = np.hstack((mean_test_feature, std_test_feature))
     
-    # Standardize features and train a logistic regression model
+    X_train = np.hstack((mean_train_feature, std_train_feature))
+    X_test = np.hstack((mean_test_feature, std_test_feature))
+    
     scaler = StandardScaler()
-    train_features_std = scaler.fit_transform(train_features)
-    test_features_std = scaler.transform(test_features)
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
     
-    lr = LogisticRegression(penalty='elasticnet', solver='saga',
-                            max_iter=max_iter, C=C, l1_ratio=l1_ratio)
-    lr.fit(train_features_std, train_labels)
-    test_outputs = lr.predict(test_features_std)
+    model = keras.Sequential([
+        keras.layers.Dense(32, activation='relu', input_dim=X_train.shape[1]),  # Specify input dimension
+        keras.layers.Dense(16, activation='relu'),
+        keras.layers.Dense(1, activation='sigmoid') 
+    ])
+    
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+    model.fit(X_train, train_labels, epochs=10, batch_size=4, validation_split=0.2)
+
+    test_outputs = model.predict(X_test)
+    test_outputs = (test_outputs > 0.5).astype(int)  
+
+    micro_f1 = f1_score(test_labels, test_outputs, average='micro')
+    macro_f1 = f1_score(test_labels, test_outputs, average='macro')
+    print(f'Micro-averaged F1 score: {micro_f1}')
+    print(f'Macro-averaged F1 score: {macro_f1}')
     
     return test_outputs
 
