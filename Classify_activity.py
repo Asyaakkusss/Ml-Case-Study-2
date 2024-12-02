@@ -38,7 +38,7 @@ def predict_test(train_data, train_labels, test_data):
     model.fit(train_data, train_labels, epochs=10, batch_size=4, validation_split=0.2)
 
     test_outputs = model.predict(test_data)
-
+    test_outputs = np.argmax(test_outputs, axis=1)
     micro_f1 = f1_score(test_labels, test_outputs, average='micro')
     macro_f1 = f1_score(test_labels, test_outputs, average='macro')
     print(f'Micro-averaged F1 score: {micro_f1}')
