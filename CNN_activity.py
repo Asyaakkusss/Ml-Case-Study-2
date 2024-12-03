@@ -49,15 +49,27 @@ def predict_test(train_data, train_labels, test_data):
                 EarlyStopping(patience=2),
                 model_checkpoint_callback,
     ]
-    '''
-    # Standardize features and train a logistic regression model
+    
+    # Step 1: Initialize the scaler
     scaler = StandardScaler()
-    train_features_std = scaler.fit_transform(train_data)
-    test_features_std = scaler.transform(test_data)
-    '''
-    history = model.fit(train_data,train_labels, epochs=100, callbacks=callbacks)
 
-    test_outputs = model.predict(test_data)
+    # Step 2: Reshape training data to 2D for scaling
+    train_data_reshaped = train_data.reshape(-1, train_data.shape[-1])  # Flatten timesteps into samples
+
+    # Step 3: Fit the scaler on training data and scale
+    train_data_scaled = scaler.fit_transform(train_data_reshaped)
+
+    # Step 4: Reshape scaled training data back to 3D
+    train_data_scaled = train_data_scaled.reshape(train_data.shape)
+
+    # Step 5: Repeat for test data (using the same scaler)
+    test_data_reshaped = test_data.reshape(-1, test_data.shape[-1])  # Flatten timesteps into samples
+    test_data_scaled = scaler.transform(test_data_reshaped)
+    test_data_scaled = test_data_scaled.reshape(test_data.shape)
+    
+    history = model.fit(train_data_scaled,train_labels, epochs=100, callbacks=callbacks)
+
+    test_outputs = model.predict(test_data_scaled)
     test_outputs = np.argmax(test_outputs, axis=1)  # Convert probabilities to class labels
 
 
