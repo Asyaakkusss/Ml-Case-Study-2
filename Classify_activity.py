@@ -30,7 +30,8 @@ def predict_test(train_data, train_labels, test_data):
     keras.layers.LSTM(32),
     keras.layers.Dense(16, activation='relu'),
     keras.layers.Dense(4, activation='softmax')  # For multi-class classification
-])
+    
+    ])
 
     
     model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
