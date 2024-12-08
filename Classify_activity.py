@@ -21,12 +21,12 @@ def predict_test(train_data, train_labels, test_data):
         # First block
         tf.keras.layers.Conv1D(64, 3, activation='relu', padding='same'),  # Increased filters to 64
         tf.keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
-        tf.keras.layers.MaxPooling1D(pool_size=2),
+        tf.keras.layers.MaxPooling1D(pool_size=1),
 
         # Second block
         tf.keras.layers.Conv1D(128, 3, activation='relu', padding='same'),  # Increased filters to 128
         tf.keras.layers.Conv1D(128, 3, activation='relu', padding='same'),
-        tf.keras.layers.MaxPooling1D(pool_size=2),
+        tf.keras.layers.MaxPooling1D(pool_size=1),
 
         # Third block
         tf.keras.layers.Conv1D(256, 3, activation='relu', padding='same'),  # Increased filters to 256
@@ -36,7 +36,7 @@ def predict_test(train_data, train_labels, test_data):
         # Fully connected layers
         tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(256, activation="relu"),  # Increased neurons to 256
-        tf.keras.layers.Dropout(0.4),  # Increased dropout to 40% for regularization
+        tf.keras.layers.Dropout(0.2),  # Increased dropout to 20% for regularization
         tf.keras.layers.Dense(10, activation="softmax")  # Output layer for 10 classes
         ]
     )
