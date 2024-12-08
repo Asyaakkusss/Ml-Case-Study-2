@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Conv1D, GlobalAveragePooling1D, GlobalMaxPooling1D, MaxPooling1D, Dense, Dropout, Flatten
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras import Model as Model
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
@@ -18,16 +18,26 @@ def predict_test(train_data, train_labels, test_data):
 
     model = tf.keras.Sequential(
         [
-        tf.keras.layers.Conv1D(32, 3, activation='relu'),
-        tf.keras.layers.MaxPooling1D(),
+        # First block
+        tf.keras.layers.Conv1D(64, 3, activation='relu', padding='same'),  # Increased filters to 64
+        tf.keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
+        tf.keras.layers.MaxPooling1D(pool_size=2),
 
-        tf.keras.layers.Conv1D(32, 3, activation='relu'),
+        # Second block
+        tf.keras.layers.Conv1D(128, 3, activation='relu', padding='same'),  # Increased filters to 128
+        tf.keras.layers.Conv1D(128, 3, activation='relu', padding='same'),
+        tf.keras.layers.MaxPooling1D(pool_size=2),
+
+        # Third block
+        tf.keras.layers.Conv1D(256, 3, activation='relu', padding='same'),  # Increased filters to 256
+        tf.keras.layers.Conv1D(256, 3, activation='relu', padding='same'),
         tf.keras.layers.GlobalMaxPooling1D(),
 
+        # Fully connected layers
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(100, activation="relu"),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(10, activation="softmax")
+        tf.keras.layers.Dense(256, activation="relu"),  # Increased neurons to 256
+        tf.keras.layers.Dropout(0.4),  # Increased dropout to 40% for regularization
+        tf.keras.layers.Dense(10, activation="softmax")  # Output layer for 10 classes
         ]
     )
 
@@ -67,7 +77,7 @@ def predict_test(train_data, train_labels, test_data):
     test_data_scaled = scaler.transform(test_data_reshaped)
     test_data_scaled = test_data_scaled.reshape(test_data.shape)
     
-    history = model.fit(train_data_scaled,train_labels, epochs=100, callbacks=callbacks)
+    history = model.fit(train_data_scaled,train_labels, epochs=20, callbacks=callbacks)
 
     test_outputs = model.predict(test_data_scaled)
     test_outputs = np.argmax(test_outputs, axis=1)  # Convert probabilities to class labels
