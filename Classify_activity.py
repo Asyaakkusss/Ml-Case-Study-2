@@ -19,18 +19,18 @@ def predict_test(train_data, train_labels, test_data):
     model = tf.keras.Sequential(
         [
         # First block
-        tf.keras.layers.Conv1D(64, 3, activation='relu', padding='same'),  # Increased filters to 64
-        tf.keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
+        tf.keras.layers.Conv1D(64, 4, activation='relu', padding='same'),  # Increased filters to 64
+        tf.keras.layers.Conv1D(64, 4, activation='relu', padding='same'),
         tf.keras.layers.MaxPooling1D(pool_size=1),
 
         # Second block
-        tf.keras.layers.Conv1D(128, 3, activation='relu', padding='same'),  # Increased filters to 128
-        tf.keras.layers.Conv1D(128, 3, activation='relu', padding='same'),
+        tf.keras.layers.Conv1D(128, 4, activation='relu', padding='same'),  # Increased filters to 128
+        tf.keras.layers.Conv1D(128, 4, activation='relu', padding='same'),
         tf.keras.layers.MaxPooling1D(pool_size=1),
 
         # Third block
-        tf.keras.layers.Conv1D(256, 3, activation='relu', padding='same'),  # Increased filters to 256
-        tf.keras.layers.Conv1D(256, 3, activation='relu', padding='same'),
+        tf.keras.layers.Conv1D(256, 4, activation='relu', padding='same'),  # Increased filters to 256
+        tf.keras.layers.Conv1D(256, 4, activation='relu', padding='same'),
         tf.keras.layers.GlobalMaxPooling1D(),
 
         # Fully connected layers
@@ -77,7 +77,7 @@ def predict_test(train_data, train_labels, test_data):
     test_data_scaled = scaler.transform(test_data_reshaped)
     test_data_scaled = test_data_scaled.reshape(test_data.shape)
     
-    history = model.fit(train_data_scaled,train_labels, epochs=20, callbacks=callbacks)
+    history = model.fit(train_data_scaled,train_labels, epochs=100, callbacks=callbacks)
 
     test_outputs = model.predict(test_data_scaled)
     test_outputs = np.argmax(test_outputs, axis=1)  # Convert probabilities to class labels
