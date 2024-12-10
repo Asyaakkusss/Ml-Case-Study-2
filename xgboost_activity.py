@@ -44,17 +44,19 @@ def predict_test(train_data, train_labels, test_data):
     return preds
 
 def hyperparameter_tuning(train_data, train_labels):
-    xgb_clf = xgb.XGBClassifier(objective='multi:softmax', num_class=4, use_label_encoder=False)
+    xgb_clf = xgb.XGBClassifier(objective='multi:softmax', num_class=4)
 
     # Define the parameter grid
     param_dist = {
         'n_estimators': [50, 100, 200, 300],
         'max_depth': [3, 4, 5, 6],
-        'learning_rate': [0.01, 0.1, 0.2, 0.3],
+        'learning_rate': [0.1, 0.2, 0.3, 0.4],
         'subsample': [0.6, 0.7, 0.8, 0.9, 1.0],
         'colsample_bytree': [0.6, 0.7, 0.8, 0.9, 1.0],
         'gamma': [0, 0.1, 0.2, 0.3, 0.4],
         'min_child_weight': [1, 2, 3, 4],
+        'reg_lambda': [50, 100, 200],
+        'reg_alpha': [50, 100, 200]
     }
 
     # Define the scorer (F1 macro)
