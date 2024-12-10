@@ -12,8 +12,10 @@ sensor_names = ['Acc_x', 'Acc_y', 'Acc_z', 'Gyr_x', 'Gyr_y', 'Gyr_z']
 # Last row of training data for train/test split
 train_end_index = 3511
 
-
 def predict_test(train_data, train_labels, test_data):
+
+    train_labels -= 1
+
     tf.random.set_seed(0)
 
     model = tf.keras.Sequential(
@@ -72,6 +74,7 @@ def predict_test(train_data, train_labels, test_data):
     test_outputs = model.predict(test_data_scaled)
     test_outputs = np.argmax(test_outputs, axis=1)  # Convert probabilities to class labels
 
+    test_outputs += 1
 
     return test_outputs
 
@@ -95,8 +98,6 @@ if __name__ == "__main__":
     train_labels = labels[:train_end_index+1]
     test_data = data[train_end_index+1:, :, :]
     test_labels = labels[train_end_index+1:]
-    train_labels -= 1
-    test_labels -= 1
     test_outputs = predict_test(train_data, train_labels, test_data)
 
     # Compute micro and macro-averaged F1 scores
