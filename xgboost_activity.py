@@ -1,5 +1,10 @@
 import numpy as np
 
+import numpy as np
+from scipy.signal import find_peaks
+from scipy.stats import skew, kurtosis
+from scipy.fftpack import fft
+
 from scipy.stats import uniform, randint
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import make_scorer, f1_score
@@ -18,17 +23,62 @@ sensor_names = ['Acc_x', 'Acc_y', 'Acc_z', 'Gyr_x', 'Gyr_y', 'Gyr_z']
 train_end_index = 3511
 # Logistic regression hyperparameters
 
+def extract_features(data):
+    """
+    Extract features from 3D sensor data (samples x timesteps x features).
+    Each feature captures characteristics specific to activities such as resting, walking, running, and commuting.
+    
+    Parameters:
+        data (numpy.ndarray): Sensor data with shape (samples, timesteps, axes).
+    
+    Returns:
+        numpy.ndarray: Extracted feature vectors for each sample.
+    """
+    # Statistical Features
+    mean_features = np.mean(data, axis=1)  # Mean for each axis
+    std_features = np.std(data, axis=1)   # Standard deviation
+    range_features = np.ptp(data, axis=1)  # Range (max - min)
+    variance_features = np.var(data, axis=1)  # Variance
+    skew_features = np.apply_along_axis(lambda x: skew(x, axis=0), axis=1, arr=data)  # Skewness
+    kurtosis_features = np.apply_along_axis(lambda x: kurtosis(x, axis=0), axis=1, arr=data)  # Kurtosis
+
+    # Time-Domain Features
+    zero_crossings = np.sum(np.diff(np.sign(data), axis=1) != 0, axis=1)  # Zero-crossing rate
+    energy_features = np.sum(data ** 2, axis=1)  # Signal energy
+
+    # Frequency Features (FFT)
+    fft_coeffs = np.abs(fft(data, axis=1))
+    dominant_freqs = np.argmax(fft_coeffs, axis=1)  # Dominant frequency index
+    spectral_entropy = -np.sum((fft_coeffs / np.sum(fft_coeffs, axis=1, keepdims=True)) *
+                               np.log2(fft_coeffs + 1e-12), axis=1)  # Spectral entropy
+
+    # Shape Features
+    peak_counts = np.array([np.sum([len(find_peaks(row[:, axis])[0]) for axis in range(row.shape[1])]) for row in data])
+    peak_counts = np.tile(peak_counts[:, None], (1, 6))
+
+    '''
+    # Ensure all features are 2D
+    zero_crossings = zero_crossings[:, None]  # Convert to 2D
+    energy_features = energy_features[:, None]
+    dominant_freqs = dominant_freqs[:, None]
+    spectral_entropy = spectral_entropy[:, None]
+    peak_counts = peak_counts[:, None]'''
+
+    # Combine all features
+    combined_features = np.hstack([
+        mean_features, std_features, range_features, variance_features,
+        skew_features, kurtosis_features, zero_crossings,
+        energy_features, dominant_freqs, spectral_entropy,
+        peak_counts
+    ])
+
+    return combined_features
+
 def predict_test(train_data, train_labels, test_data):
     train_labels -= 1
 
-    # Feature extraction: compute mean and standard deviation of each row for
-    # each sensor and concatenate across sensors to form the feature vector
-    mean_train_feature = np.mean(train_data, axis=1)
-    std_train_feature = np.std(train_data, axis=1)
-    train_features = np.hstack((mean_train_feature, std_train_feature))
-    mean_test_feature = np.mean(test_data, axis=1)
-    std_test_feature = np.std(test_data, axis=1)
-    test_features = np.hstack((mean_test_feature, std_test_feature))
+    train_features = extract_features(train_data)
+    test_features = extract_features(test_data)
 
     # Standardize features and train a logistic regression model
     scaler = StandardScaler()

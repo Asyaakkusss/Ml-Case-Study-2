@@ -8,6 +8,11 @@ from sklearn.metrics import f1_score
 import numpy as np
 import matplotlib.pyplot as plt
 
+import numpy as np
+from scipy.signal import find_peaks
+from scipy.stats import skew, kurtosis
+from scipy.fftpack import fft
+
 sensor_names = ['Acc_x', 'Acc_y', 'Acc_z', 'Gyr_x', 'Gyr_y', 'Gyr_z']
 # Last row of training data for train/test split
 train_end_index = 3511

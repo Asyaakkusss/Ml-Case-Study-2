@@ -9,6 +9,11 @@ from sklearn.metrics import f1_score
 import numpy as np
 import matplotlib.pyplot as plt
 
+import numpy as np
+from scipy.signal import find_peaks
+from scipy.stats import skew, kurtosis
+from scipy.fftpack import fft
+
 sensor_names = ['Acc_x', 'Acc_y', 'Acc_z', 'Gyr_x', 'Gyr_y', 'Gyr_z']
 # Last row of training data for train/test split
 train_end_index = 3511
@@ -24,6 +29,49 @@ def show_final_history(history):
     ax[1].plot(history.epoch, history.history["val_accuracy"], label="Validation acc")
     ax[0].legend()
     ax[1].legend()
+
+def extract_features(data):
+    """
+    Extract features from 3D sensor data (samples x timesteps x features).
+    Each feature captures characteristics specific to activities such as resting, walking, running, and commuting.
+    
+    Parameters:
+        data (numpy.ndarray): Sensor data with shape (samples, timesteps, axes).
+    
+    Returns:
+        numpy.ndarray: Extracted feature vectors for each sample.
+    """
+    # Statistical Features
+    mean_features = np.mean(data, axis=1)  # Mean for each axis
+    std_features = np.std(data, axis=1)   # Standard deviation
+    range_features = np.ptp(data, axis=1)  # Range (max - min)
+    variance_features = np.var(data, axis=1)  # Variance
+    skew_features = np.apply_along_axis(lambda x: skew(x, axis=0), axis=1, arr=data)  # Skewness
+    kurtosis_features = np.apply_along_axis(lambda x: kurtosis(x, axis=0), axis=1, arr=data)  # Kurtosis
+
+    # Time-Domain Features
+    zero_crossings = np.sum(np.diff(np.sign(data), axis=1) != 0, axis=1)  # Zero-crossing rate
+    energy_features = np.sum(data ** 2, axis=1)  # Signal energy
+
+    # Frequency Features (FFT)
+    fft_coeffs = np.abs(fft(data, axis=1))
+    dominant_freqs = np.argmax(fft_coeffs, axis=1)  # Dominant frequency index
+    spectral_entropy = -np.sum((fft_coeffs / np.sum(fft_coeffs, axis=1, keepdims=True)) *
+                            np.log2(fft_coeffs + 1e-12), axis=1)  # Spectral entropy
+
+    # Shape Features
+    peak_counts = np.array([np.sum([len(find_peaks(row[:, axis])[0]) for axis in range(row.shape[1])]) for row in data])
+    peak_counts = np.tile(peak_counts[:, None], (1, 6))
+
+    # Combine all features
+    combined_features = np.hstack([
+        mean_features, std_features, range_features, variance_features,
+        skew_features, kurtosis_features, zero_crossings,
+        energy_features, dominant_freqs, spectral_entropy,
+        peak_counts
+    ])
+
+    return combined_features
 
 class ScikitLearnF1Callback(tf.keras.callbacks.Callback):
     def __init__(self, validation_data):
@@ -52,6 +100,9 @@ def predict_test(train_data, train_labels, test_data):
     train_labels -= 1
 
     tf.random.set_seed(0)
+
+    train_data = extract_features(train_data)
+    test_data = extract_features(test_data)
 
     '''
     tf.keras.layers.Conv1D(64, 4, activation='relu', padding='same', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
